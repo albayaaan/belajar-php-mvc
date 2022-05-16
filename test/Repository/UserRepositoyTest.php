@@ -2,43 +2,38 @@
 
 namespace ProgrammerZamanNow\Belajar\PHP\MVC\Repository;
 
+use PHPUnit\Framework\TestCase;
+use ProgrammerZamanNow\Belajar\PHP\MVC\Config\Database;
 use ProgrammerZamanNow\Belajar\PHP\MVC\Domain\User;
 
-class UserRepository
+class UserRepositoryTest extends TestCase
 {
-    private \PDO $connection;
+    private UserRepository $userRepository;
 
-    public function __construct(\PDO $connection)
+    protected function setUp(): void
     {
-        $this->connection = $connection;   
+        $this->userRepository = new UserRepository(Database::getConnection());
     }
 
-    public function save(User $user): User
+    public function testSaveSuccess()
     {
-        $statement = $this->connection->prepare("INSERT INTO user(id, name, password) VALUES (?, ?, ?)");
-        $statement->execute([
-            $user->id, $user->name, $user->password
-        ]);
-        return $user;
+        $user = new User();
+        $user->id = "eko";
+        $user->name = "Eko";
+        $user->password = "rahasia";
+
+        $this->userRepository->save($user);
+
+        $result = $this->userRepository->findById($user->id);
+
+        self::assertEquals($user->id, $result->id);
+        self::assertEquals($user->name, $result->name);
+        self::assertEquals($user->password, $result->password);
     }
 
-    public function findById(string $id): ?User
+    public function testFindByIdNotFound()
     {
-        $statement = $this->connection->prepare("SELECT id, name, password FROM users WHERE id=?");
-        $statement->execute([$id]);
-
-        try {
-            if($row = $statement->fetch()){
-                $user = new User();
-                $user->id = $row['id'];
-                $user->name = $row['name'];
-                $user->password = $row['password'];
-                return $user;
-            } else {
-                return null;
-            }
-        } finally {
-            $statement->closeCursor();
-        }
+        $user = $this->userRepository->findById("notfound");
+        self::assertNull($user);
     }
 }
